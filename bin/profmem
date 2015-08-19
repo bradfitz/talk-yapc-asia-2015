@@ -1,0 +1,3 @@
+#!/bin/bash
+set -e
+exec go tool pprof --alloc_space $(basename $(pwd)).test prof.mem

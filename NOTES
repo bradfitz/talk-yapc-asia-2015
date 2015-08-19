@@ -1,0 +1,38 @@
+profmem:
+
+#!/bin/bash
+set -e
+exec go tool pprof --alloc_space $(basename $(pwd)).test prof.mem
+
+profcpu:
+
+#!/bin/bash
+set -e
+exec go tool pprof $(basename $(pwd)).test prof.cpu
+
+* write an HTTP handler
+
+  - fix races
+   
+* cpu profile
+
+  - aside: mac_pprof_fix
+
+* bench.RunParallel (benchpar), show contention
+
+Representation:
+
+ - *[]byte in interface{} (but maps and funcs okay)
+ - sync.Pool returning *[]byte
+
+* TestMain to show before & after mem stats
+
+* go into showing fmt's format.go and the TODO in fmt_sbx
+
+* trace
+
+* cover
+
+* runtime 
+
+* benchcmp/benchstat
