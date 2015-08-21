@@ -398,5 +398,5 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
 (pprof) web
 ```
 
-![cpu0.svg](cpu0.svg)
+![cpu0.png](cpu0.png)
 
