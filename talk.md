@@ -6,6 +6,14 @@ YAPC::Asia 2015
 
 Tokyo Big Sight, 2015-08-22
 
+## Requirements
+
+If you're following along at home, you'll need the following:
+
+* Go (1.4.2 or 1.5+ recommended)
+* Graphviz (http://www.graphviz.org/)
+* Linux (ideal), Windows, or OS X (requires http://godoc.org/rsc.io/pprof_mac_fix)
+
 ## Starting program.
 
 Let's debug and optimize a simple HTTP server.
@@ -243,8 +251,8 @@ conflicts with the read on line 17 (of the same variable). To make it
 more obvious, change the code to:
 
 ```
-        now := visitors + 1
-        visitors = now
+    now := visitors + 1
+    visitors = now
 ```
 
 ... and it'll report different line numbers for each.
@@ -268,6 +276,8 @@ Multiple options:
     n int
   }
 ...
+  func foo() {
+    ...
     visitors.Lock()
     visitors.n++
     yourVisitorNumber := visitors.n
@@ -279,5 +289,110 @@ Multiple options:
 ```
   var visitors int64 // must be accessed atomically
 ...
+  func foo() {
+    ...
     visitNum := atomic.AddInt64(&visitors, 1)
+```
+
+## How fast can it go? CPU Profiling!
+
+To use Go's CPU profiling, it's easiest to first write a `Benchmark`
+function, which is very similar to a `Test` function.
+
+```
+func BenchmarkHi(b *testing.B) {
+        r := req(b, "GET / HTTP/1.0\r\n\r\n")
+        for i := 0; i < b.N; i++ {
+                rw := httptest.NewRecorder()
+                handleHi(rw, r)
+        }
+}
+```
+
+(and change `func req` to take the `testing.TB` interface instead, so
+it can take a `*testing.T` or a `*testing.B`)
+
+Now we can run the benchmarks:
+
+```
+$ go test -v -run=^$ -bench=. 
+PASS
+BenchmarkHi-4     100000             12843 ns/op
+ok      yapc/demo       1.472s
+```
+
+Play with flags, like `-benchtime`.
+
+Is that fast? Slow? Your decision.
+
+But let's see where the CPU is going now....
+
+## CPU Profiling
+
+```
+$ go test -v -run=^$ -bench=^BenchmarkHi$ -benchtime=2s -cpuprofile=prof.cpu
+```
+
+(Leaves `demo.test` binary behind)
+
+Now, let's use the Go profile viewer:
+
+```
+$ go tool pprof demo.test prof.cpu
+Entering interactive mode (type "help" for commands)
+
+(pprof) top 
+3070ms of 3850ms total (79.74%)
+Dropped 62 nodes (cum <= 19.25ms)
+Showing top 10 nodes out of 92 (cum >= 290ms)
+      flat  flat%   sum%        cum   cum%
+    1710ms 44.42% 44.42%     1710ms 44.42%  runtime.mach_semaphore_signal
+     290ms  7.53% 51.95%     1970ms 51.17%  runtime.growslice
+     230ms  5.97% 57.92%      230ms  5.97%  runtime.mach_semaphore_wait
+     200ms  5.19% 63.12%     2270ms 58.96%  runtime.mallocgc
+     160ms  4.16% 67.27%      160ms  4.16%  runtime.heapBitsSetType
+     110ms  2.86% 70.13%      210ms  5.45%  runtime.mapassign1
+     110ms  2.86% 72.99%      110ms  2.86%  runtime.memclr
+     100ms  2.60% 75.58%      640ms 16.62%  regexp.makeOnePass.func2
+     100ms  2.60% 78.18%      100ms  2.60%  runtime.memmove
+      60ms  1.56% 79.74%      290ms  7.53%  runtime.makeslice
+
+(pprof) top --cum
+0.26s of 3.85s total ( 6.75%)
+Dropped 62 nodes (cum <= 0.02s)
+Showing top 10 nodes out of 92 (cum >= 2.22s)
+      flat  flat%   sum%        cum   cum%
+         0     0%     0%      3.55s 92.21%  runtime.goexit
+         0     0%     0%      3.48s 90.39%  testing.(*B).launch
+         0     0%     0%      3.48s 90.39%  testing.(*B).runN
+     0.01s  0.26%  0.26%      3.47s 90.13%  yapc/demo.BenchmarkHi
+     0.01s  0.26%  0.52%      3.44s 89.35%  yapc/demo.handleHi
+         0     0%  0.52%      3.30s 85.71%  regexp.MatchString
+     0.01s  0.26%  0.78%         3s 77.92%  regexp.Compile
+         0     0%  0.78%      2.99s 77.66%  regexp.compile
+     0.20s  5.19%  5.97%      2.27s 58.96%  runtime.mallocgc
+     0.03s  0.78%  6.75%      2.22s 57.66%  regexp.compileOnePass
+
+(pprof) list handleHi
+Total: 3.85s
+ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/demo/demo.go
+      10ms      3.44s (flat, cum) 89.35% of Total
+         .          .      8:)
+         .          .      9:
+         .          .     10:var visitors int
+         .          .     11:
+         .          .     12:func handleHi(w http.ResponseWriter, r *http.Request) {
+         .      3.30s     13:   if match, _ := regexp.MatchString(\w*$r.FormValue("color")); !match {
+         .          .     14:           http.Error(w, "Optional color is invalid", http.StatusBadRequest)
+         .          .     15:           return
+         .          .     16:   }
+      10ms       10ms     17:   visitors++
+         .       50ms     18:   w.Header().Set("Content-Type", "text/html; charset=utf-8")
+         .       80ms     19:   w.Write([]byte("<h1 style='color: " + r.FormValue("color") + "'>Welcome!</h1>You are visitor number " + fmt.Sprint(visitors) + "!"))
+         .          .     20:}
+         .          .     21:
+         .          .     22:func main() {
+         .          .     23:   log.Printf("Starting on port 8080")
+         .          .     24:   http.HandleFunc("/hi", handleHi)
+
 ```
