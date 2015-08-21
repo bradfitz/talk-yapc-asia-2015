@@ -395,4 +395,8 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
          .          .     23:   log.Printf("Starting on port 8080")
          .          .     24:   http.HandleFunc("/hi", handleHi)
 
+(pprof) web
 ```
+
+![cpu0.svg](cpu0.svg)
+
