@@ -237,3 +237,47 @@ Found 1 data race(s)
 exit status 66
 FAIL    yapc/demo       1.056s
 ```
+
+Now we can see that the write on line 17 (to the `visitors` variable)
+conflicts with the read on line 17 (of the same variable). To make it
+more obvious, change the code to:
+
+```
+        now := visitors + 1
+        visitors = now
+```
+
+... and it'll report different line numbers for each.
+
+## Fix the race!
+
+If your code has data races, all bets are off and you're just waiting
+for a crash. The runtime promises nothing if you have a data race.
+
+Multiple options:
+
+* use channels ("share by communication, don't communication by sharing")
+* use a Mutex
+* use atomic
+
+### Mutex
+
+```
+  var visitors struct {
+    sync.Mutex
+    n int
+  }
+...
+    visitors.Lock()
+    visitors.n++
+    yourVisitorNumber := visitors.n
+    visitors.Unlock()
+```
+
+### Atomic
+
+```
+  var visitors int64 // must be accessed atomically
+...
+    visitNum := atomic.AddInt64(&visitors, 1)
+```
