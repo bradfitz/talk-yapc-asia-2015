@@ -12,7 +12,7 @@ If you're following along at home, you'll need the following:
 
 * Go (1.4.2 or 1.5+ recommended)
 * Graphviz (http://www.graphviz.org/)
-* Linux (ideal), Windows, or OS X (requires http://godoc.org/rsc.io/pprof_mac_fix)
+* Linux (ideal), Windows, or OS X (requires [pprof_mac_fix](http://godoc.org/rsc.io/pprof_mac_fix))
 
 ## Starting program.
 
@@ -399,4 +399,184 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
 ```
 
 ![cpu0.png](cpu0.png)
+
+3 seconds in `regexp.MatchString`? CPU profiling shows 85.71% of the
+cumulative time in MatchString, 77.92% in regexp compilation, and
+58.96% in garbage collection (which is triggered via allocations).
+
+Allocate less => fewer GCs.
+
+Why are we allocating?
+
+## Memory profiling
+
+```
+$ go tool pprof --alloc_space demo.test prof.mem
+(pprof) top
+1159.72MB of 1485.25MB total (78.08%)
+Dropped 12 nodes (cum <= 7.43MB)
+Showing top 10 nodes out of 33 (cum >= 1484.75MB)
+      flat  flat%   sum%        cum   cum%
+  294.10MB 19.80% 19.80%   294.10MB 19.80%  regexp.onePassCopy
+  174.53MB 11.75% 31.55%   174.53MB 11.75%  regexp.progMachine
+  119.03MB  8.01% 39.57%   170.54MB 11.48%  regexp/syntax.(*compiler).compile
+  106.53MB  7.17% 46.74%   106.53MB  7.17%  net/textproto.MIMEHeader.Set
+  100.51MB  6.77% 53.51%   308.51MB 20.77%  regexp.makeOnePass
+      99MB  6.67% 60.17%   208.01MB 14.00%  regexp.makeOnePass.func2
+   84.50MB  5.69% 65.86%    84.50MB  5.69%  regexp.mergeRuneSets.func2
+   69.51MB  4.68% 70.54%    80.01MB  5.39%  regexp/syntax.(*parser).op
+   58.51MB  3.94% 74.48%   242.02MB 16.30%  regexp/syntax.Parse
+   53.50MB  3.60% 78.08%  1484.75MB   100%  yapc/demo.BenchmarkHi
+
+(pprof) top --cum
+249.02MB of 1485.25MB total (16.77%)
+Dropped 12 nodes (cum <= 7.43MB)
+Showing top 10 nodes out of 33 (cum >= 308.51MB)
+      flat  flat%   sum%        cum   cum%
+         0     0%     0%  1484.75MB   100%  runtime.goexit
+         0     0%     0%  1484.75MB   100%  testing.(*B).launch
+         0     0%     0%  1484.75MB   100%  testing.(*B).runN
+   53.50MB  3.60%  3.60%  1484.75MB   100%  yapc/demo.BenchmarkHi
+   52.50MB  3.53%  7.14%  1431.25MB 96.36%  yapc/demo.handleHi
+         0     0%  7.14%  1265.21MB 85.18%  regexp.MatchString
+         0     0%  7.14%  1087.18MB 73.20%  regexp.Compile
+   42.51MB  2.86% 10.00%  1087.18MB 73.20%  regexp.compile
+         0     0% 10.00%   602.61MB 40.57%  regexp.compileOnePass
+  100.51MB  6.77% 16.77%   308.51MB 20.77%  regexp.makeOnePass
+
+(pprof) list BenchmarkHi
+Total: 1.45GB
+ROUTINE ======================== yapc/demo.BenchmarkHi in /Users/bradfitz/src/yapc/demo/demo_test.go
+   53.50MB     1.45GB (flat, cum)   100% of Total
+         .          .     72:}
+         .          .     73:
+         .          .     74:func BenchmarkHi(b *testing.B) {
+         .          .     75:   r := req(b, "GET / HTTP/1.0\r\n\r\n")
+         .          .     76:   for i := 0; i < b.N; i++ {
+   53.50MB    53.50MB     77:           rw := httptest.NewRecorder()
+         .     1.40GB     78:           handleHi(rw, r)
+         .          .     79:   }
+         .          .     80:}
+
+(pprof) list handleHi
+Total: 1.45GB
+ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/demo/demo.go
+   52.50MB     1.40GB (flat, cum) 96.36% of Total
+         .          .      8:)
+         .          .      9:
+         .          .     10:var visitors int
+         .          .     11:
+         .          .     12:func handleHi(w http.ResponseWriter, r *http.Request) {
+         .     1.24GB     13:   if match, _ := regexp.MatchString(\w*$r.FormValue("color")); !match {
+         .          .     14:           http.Error(w, "Optional color is invalid", http.StatusBadRequest)
+         .          .     15:           return
+         .          .     16:   }
+         .          .     17:   visitors++
+         .   106.53MB     18:   w.Header().Set("Content-Type", "text/html; charset=utf-8")
+   52.50MB    59.50MB     19:   w.Write([]byte("<h1 style='color: " + r.FormValue("color") + "'>Welcome!</h1>You are visitor number " + fmt.Sprint(visitors) + "!"))
+         .          .     20:}
+         .          .     21:
+         .          .     22:func main() {
+         .          .     23:   log.Printf("Starting on port 8080")
+         .          .     24:   http.HandleFunc("/hi", handleHi)
+
+```
+
+## Let's compile that regexp just once
+
+```
+var colorRx = regexp.MustCompile(`\w*$`)
+...
+  if !colorRx.MatchString(r.FormValue("color")) {
+```
+
+And now:
+
+```
+$ go test -bench=.
+PASS
+BenchmarkHi-4    1000000              1451 ns/op
+ok      yapc/demo       1.517s
+```
+
+10x faster!
+
+Let's compare CPU now:
+
+```
+bradfitz@laptop demo$ go test -v -run=^$ -bench=. -benchtime=3s -memprofile=prof.mem -cpuprofile=prof.cpu
+PASS
+BenchmarkHi-4    3000000              1420 ns/op
+ok      yapc/demo       5.768s
+bradfitz@laptop demo$ profcpu
+Entering interactive mode (type "help" for commands)
+(pprof) top --cum 30
+2.78s of 6.24s total (44.55%)
+Dropped 75 nodes (cum <= 0.03s)
+Showing top 30 nodes out of 114 (cum >= 0.67s)
+      flat  flat%   sum%        cum   cum%
+         0     0%     0%      4.84s 77.56%  runtime.goexit
+         0     0%     0%      3.72s 59.62%  testing.(*B).launch
+         0     0%     0%      3.72s 59.62%  testing.(*B).runN
+     0.02s  0.32%  0.32%      3.71s 59.46%  yapc/demo.BenchmarkHi
+         0     0%  0.32%      3.04s 48.72%  yapc/demo.handleHi
+     0.37s  5.93%  6.25%      2.55s 40.87%  runtime.mallocgc
+     2.16s 34.62% 40.87%      2.16s 34.62%  runtime.mach_semaphore_signal
+         0     0% 40.87%      2.16s 34.62%  runtime.mach_semrelease
+         0     0% 40.87%      2.16s 34.62%  runtime.notewakeup
+         0     0% 40.87%      2.16s 34.62%  runtime.semawakeup
+         0     0% 40.87%      2.03s 32.53%  runtime.startm
+         0     0% 40.87%      2.02s 32.37%  runtime.wakep
+         0     0% 40.87%      1.83s 29.33%  runtime.systemstack
+         0     0% 40.87%      1.54s 24.68%  runtime.ready
+         0     0% 40.87%      1.54s 24.68%  runtime.startGC
+         0     0% 40.87%      1.32s 21.15%  runtime.schedule
+     0.02s  0.32% 41.19%      1.21s 19.39%  runtime.mcall
+     0.01s  0.16% 41.35%      1.06s 16.99%  runtime.semasleep.func1
+         0     0% 41.35%      1.05s 16.83%  runtime.semasleep1
+         0     0% 41.35%      1.01s 16.19%  runtime.concatstring5
+     0.11s  1.76% 43.11%      1.01s 16.19%  runtime.concatstrings
+     0.01s  0.16% 43.27%      0.94s 15.06%  runtime.rawstringtmp
+     0.03s  0.48% 43.75%      0.93s 14.90%  runtime.rawstring
+     0.01s  0.16% 43.91%      0.75s 12.02%  runtime.stringtoslicebyte
+     0.02s  0.32% 44.23%      0.74s 11.86%  runtime.rawbyteslice
+         0     0% 44.23%      0.73s 11.70%  runtime.stopm
+     0.02s  0.32% 44.55%      0.70s 11.22%  runtime.newobject
+         0     0% 44.55%      0.69s 11.06%  runtime.semasleep
+         0     0% 44.55%      0.67s 10.74%  runtime.findrunnable
+         0     0% 44.55%      0.67s 10.74%  runtime.goschedImpl
+
+(pprof) bradfitz@laptop demo$ profmem
+Entering interactive mode (type "help" for commands)
+(pprof) top --cum
+2739.53MB of 2740.53MB total (  100%)
+Dropped 9 nodes (cum <= 13.70MB)
+      flat  flat%   sum%        cum   cum%
+         0     0%     0%  2740.03MB   100%  runtime.goexit
+         0     0%     0%  2740.03MB   100%  testing.(*B).launch
+         0     0%     0%  2740.03MB   100%  testing.(*B).runN
+  728.06MB 26.57% 26.57%  2740.03MB   100%  yapc/demo.BenchmarkHi
+  561.03MB 20.47% 47.04%  2011.98MB 73.42%  yapc/demo.handleHi
+         0     0% 47.04%  1382.94MB 50.46%  net/http.Header.Set
+ 1382.94MB 50.46% 97.50%  1382.94MB 50.46%  net/textproto.MIMEHeader.Set
+   67.50MB  2.46%   100%       68MB  2.48%  fmt.Sprint
+(pprof)
+
+(pprof) list handleHi
+Total: 2.68GB
+ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/demo/demo.go
+  561.03MB     1.96GB (flat, cum) 73.42% of Total
+         .          .     15:   if !colorRx.MatchString(r.FormValue("color")) {
+         .          .     16:           http.Error(w, "Optional color is invalid", http.StatusBadRequest)
+         .          .     17:           return
+         .          .     18:   }
+         .          .     19:   visitors++
+         .     1.35GB     20:   w.Header().Set("Content-Type", "text/html; charset=utf-8")
+  561.03MB   629.03MB     21:   w.Write([]byte("<h1 style='color: " + r.FormValue("color") + "'>Welcome!</h1>You are visitor number " + fmt.Sprint(visitors) + "!"))
+         .          .     22:}
+         .          .     23:
+         .          .     24:func main() {
+         .          .     25:   log.Printf("Starting on port 8080")
+         .          .     26:   http.HandleFunc("/hi", handleHi)
+```
 
