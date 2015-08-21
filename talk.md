@@ -142,4 +142,98 @@ Before we optimize our code, let's ensure we have no data races.
 
 Just run your tests with the `-race` flag:
 
+```
+$ go test -race
+PASS
+ok      yapc/demo       1.047s
+```
 
+All good, right?
+
+Nope.
+
+Go's race detector does runtime analysis. It has no false positives,
+but it does have false negatives. If it doesn't actually see a race,
+it can't report it.
+
+Let's change our test to actually do two things at once:
+
+```
+func TestHandleHi_TestServer_Parallel(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(handleHi))
+	defer ts.Close()
+	var wg sync.WaitGroup
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			res, err := http.Get(ts.URL)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			slurp, err := ioutil.ReadAll(res.Body)
+			defer res.Body.Close()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			t.Logf("Got: %s", slurp)
+		}()
+	}
+	wg.Wait()
+}
+```
+
+Now we can run it again and see:
+
+```
+$ go test -v -race
+=== RUN   TestHandleHi_Recorder
+--- PASS: TestHandleHi_Recorder (0.00s)
+=== RUN   TestHandleHi_TestServer
+--- PASS: TestHandleHi_TestServer (0.00s)
+        demo_test.go:46: Got: <h1 style='color: '>Welcome!</h1>You are visitor number 2!
+=== RUN   TestHandleHi_TestServer_Parallel
+==================
+WARNING: DATA RACE
+Read by goroutine 21:
+  yapc/demo.handleHi()
+      /Users/bradfitz/src/yapc/demo/demo.go:17 +0xf5
+  net/http.HandlerFunc.ServeHTTP()
+      /Users/bradfitz/go/src/net/http/server.go:1422 +0x47
+  net/http/httptest.(*waitGroupHandler).ServeHTTP()
+      /Users/bradfitz/go/src/net/http/httptest/server.go:200 +0xfe
+  net/http.serverHandler.ServeHTTP()
+      /Users/bradfitz/go/src/net/http/server.go:1862 +0x206
+  net/http.(*conn).serve()
+      /Users/bradfitz/go/src/net/http/server.go:1361 +0x117c
+
+Previous write by goroutine 23:
+  yapc/demo.handleHi()
+      /Users/bradfitz/src/yapc/demo/demo.go:17 +0x111
+  net/http.HandlerFunc.ServeHTTP()
+      /Users/bradfitz/go/src/net/http/server.go:1422 +0x47
+  net/http/httptest.(*waitGroupHandler).ServeHTTP()
+      /Users/bradfitz/go/src/net/http/httptest/server.go:200 +0xfe
+  net/http.serverHandler.ServeHTTP()
+      /Users/bradfitz/go/src/net/http/server.go:1862 +0x206
+  net/http.(*conn).serve()
+      /Users/bradfitz/go/src/net/http/server.go:1361 +0x117c
+
+Goroutine 21 (running) created at:
+  net/http.(*Server).Serve()
+      /Users/bradfitz/go/src/net/http/server.go:1912 +0x464
+
+Goroutine 23 (running) created at:
+  net/http.(*Server).Serve()
+      /Users/bradfitz/go/src/net/http/server.go:1912 +0x464
+==================
+--- PASS: TestHandleHi_TestServer_Parallel (0.00s)
+        demo_test.go:68: Got: <h1 style='color: '>Welcome!</h1>You are visitor number 3!
+        demo_test.go:68: Got: <h1 style='color: '>Welcome!</h1>You are visitor number 4!
+PASS
+Found 1 data race(s)
+exit status 66
+FAIL    yapc/demo       1.056s
+```
