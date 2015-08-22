@@ -695,6 +695,8 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
 
 ### Runtime representation of Go data structures.
 
+See slides: [Go built-in data structures](https://docs.google.com/presentation/d/1lL7Wlh9GBtTSieqHGJ5AUd1XVYR48UPhEloVem-79mA/view#slide=id.gc5ec805d9_0_535)
+
 * A Go interface is 2 words of memory: (type, pointer).
 
 * A Go string is 2 words of memory: (base pointer, length)
