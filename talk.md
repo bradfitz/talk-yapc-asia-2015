@@ -697,7 +697,7 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
 
 * A Go interface is 2 words of memory: (type, pointer).
 
-* A Go string is 2 words of memory: (base pointer, length, capacity)
+* A Go string is 2 words of memory: (base pointer, length)
 
 * A Go slice is 3 words of memory: (base pointer, length, capacity)
 
