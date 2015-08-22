@@ -753,3 +753,82 @@ the handler:
         w.Write(b)
 ```
 
+## Contention profiling
+
+First, write a parallel benchmark:
+```
+func BenchmarkHiParallel(b *testing.B) {
+        r := req(b, "GET / HTTP/1.0\r\n\r\n")
+        b.RunParallel(func(pb *testing.PB) {
+                rw := httptest.NewRecorder()
+                for pb.Next() {
+                        handleHi(rw, r)
+                        reset(rw)
+                }
+        })
+}
+```
+
+And measure:
+
+```
+$ go test -bench=Parallel -blockprofile=prof.block
+```
+
+And "fix":
+
+```
+var colorRxPool = sync.Pool{
+        New: func() interface{} { return regexp.MustCompile(\w*$ },
+}
+...
+func handleHi(w http.ResponseWriter, r *http.Request) {
+        if !colorRxPool.Get().(*regexp.Regexp).MatchString(r.FormValue("color")) {
+                http.Error(w, "Optional color is invalid", http.StatusBadRequest)
+                return
+        }
+```
+
+What about that visitors mutex?
+
+Let's pull it out into a func:
+
+```
+        num := nextVisitorNum()
+...
+func nextVisitorNum() int {
+	visitors.Lock()
+	defer visitors.Unlock()
+	visitors.n++
+	return visitors.n
+}
+```
+
+And write some benchmarks:
+
+```
+func BenchmarkVisitCount(b *testing.B) {
+        b.RunParallel(func(pb *testing.PB) {
+                for pb.Next() {
+                        incrementVisitorNum()
+                }
+        })
+}
+```
+
+Try:
+
+* without defer
+* with `int(atomic.AddInt64(&atomicVisitors, 1))`
+
+## Coverage
+
+```
+$ go test -cover -coverprofile=cover
+PASS
+coverage: 54.8% of statements
+ok      yapc/demo       0.066s
+$ go tool cover -html=cover
+(opens web browser)
+```
+
