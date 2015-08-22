@@ -54,7 +54,7 @@ func main() {
 
 ```
 $ cd $GOPATH/src/github.com/bradfitz/talk-yapc-asia-2015/demo
-$ go run yapc.go
+$ go run demo.go
 or
 $ go build && ./demo
 or
@@ -727,6 +727,10 @@ is a compound value of 2 words (larger than the 1 word of data) and
 interface (`runtime.convT2E`) allocates 16 bytes for each (the
 smallest allocation size on 64-bit) and puts a pointer to the
 allocation in the data word of the interface value.
+
+Jump to this part in the slides now:
+
+   [Go built-in data structures](https://docs.google.com/presentation/d/1lL7Wlh9GBtTSieqHGJ5AUd1XVYR48UPhEloVem-79mA/view#slide=id.gc5ec805d9_0_535)
 
 ## Removing all allocations
 
