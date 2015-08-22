@@ -786,7 +786,7 @@ And "fix":
 
 ```
 var colorRxPool = sync.Pool{
-        New: func() interface{} { return regexp.MustCompile(\w*$ },
+        New: func() interface{} { return regexp.MustCompile(`\w*$`) },
 }
 ...
 func handleHi(w http.ResponseWriter, r *http.Request) {
