@@ -6,7 +6,7 @@ YAPC::Asia 2015
 
 Tokyo Big Sight, 2015-08-22
 
-See the [https://goo.gl/PYpNXT](intro slides).
+See the [intro slides](https://goo.gl/PYpNXT).
 
 ## Requirements
 
