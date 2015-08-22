@@ -83,9 +83,6 @@ import (
 func TestHandleRoot_Recorder(t *testing.T) {
         rw := httptest.NewRecorder()
         handleRoot(rw, req(t, "GET / HTTP/1.0\r\n\r\n"))
-        if got, want := rw.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8"; got != want {
-                t.Errorf("Content-Type = %q; want %q", got, want)
-        }
         if !strings.Contains(rw.Body.String(), "visitor number") {
                 t.Errorf("Unexpected output: %s", rw.Body)
         }
@@ -127,6 +124,9 @@ func TestHandleHi_TestServer(t *testing.T) {
                 t.Error(err)
                 return
         }
+	if g, w := res.Header.Get("Content-Type"), "text/html; charset=utf-8"; g != w {
+		t.Errorf("Content-Type = %q; want %q", g, w)
+	}
         slurp, err := ioutil.ReadAll(res.Body)
         defer res.Body.Close()
         if err != nil {
@@ -179,6 +179,9 @@ func TestHandleHi_TestServer_Parallel(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 				return
+			}
+			if g, w := res.Header.Get("Content-Type"), "text/html; charset=utf-8"; g != w {
+				t.Errorf("Content-Type = %q; want %q", g, w)
 			}
 			slurp, err := ioutil.ReadAll(res.Body)
 			defer res.Body.Close()
@@ -301,6 +304,7 @@ function, which is very similar to a `Test` function.
 
 ```
 func BenchmarkHi(b *testing.B) {
+        b.ReportAllocs()
         r := req(b, "GET / HTTP/1.0\r\n\r\n")
         for i := 0; i < b.N; i++ {
                 rw := httptest.NewRecorder()
@@ -578,5 +582,174 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
          .          .     24:func main() {
          .          .     25:   log.Printf("Starting on port 8080")
          .          .     26:   http.HandleFunc("/hi", handleHi)
+```
+
+## Optimize memory
+
+* Remove Content-Type header line (the `net/http` Server will do it for us)
+* use `fmt.Fprintf(w, ...` instead of concats
+
+## Benchcmp
+
+```
+$ go test -bench=. -memprofile=prof.mem | tee mem.0
+... (fix)
+$ go test -bench=. -memprofile=prof.mem | tee mem.1
+... (fix)
+$ go test -bench=. -memprofile=prof.mem | tee mem.2
+
+$ benchcmp mem.0 mem.2
+benchmark         old ns/op     new ns/op     delta
+BenchmarkHi-4     1180          964           -18.31%
+
+benchmark         old allocs     new allocs     delta
+BenchmarkHi-4     9              5              -44.44%
+
+benchmark         old bytes     new bytes     delta
+BenchmarkHi-4     720           224           -68.89%
+```
+
+Quite an improvement. Now, where is the memory coming from?
+
+* profmem, see & fix the ResponseRecorder:
+
+```
+func BenchmarkHi(b *testing.B) {
+        b.ReportAllocs()
+        r := req(b, "GET / HTTP/1.0\r\n\r\n")
+        rw := httptest.NewRecorder()
+        for i := 0; i < b.N; i++ {
+                handleHi(rw, r)
+                reset(rw)
+        }
+}
+
+func reset(rw *httptest.ResponseRecorder) {
+        m := rw.HeaderMap
+        for k := range m {
+                delete(m, k)
+        }
+        body := rw.Body
+        body.Reset()
+        *rw = httptest.ResponseRecorder{
+                Body:      body,
+                HeaderMap: m,
+        }
+}
+```
+
+Now:
+
+```
+$ go test -bench=. -memprofile=prof.mem | tee mem.3
+PASS
+BenchmarkHi-4    2000000               649 ns/op              32 B/op          2 allocs/op
+```
+
+Where is that?
+
+```
+(pprof) top --cum 10
+88MB of 88MB total (  100%)
+      flat  flat%   sum%        cum   cum%
+         0     0%     0%    87.50MB 99.43%  runtime.goexit
+         0     0%     0%    87.50MB 99.43%  testing.(*B).launch
+         0     0%     0%    87.50MB 99.43%  testing.(*B).runN
+         0     0%     0%    87.50MB 99.43%  yapc/demo.BenchmarkHi
+   87.50MB 99.43% 99.43%    87.50MB 99.43%  yapc/demo.handleHi
+    0.50MB  0.57%   100%     0.50MB  0.57%  runtime.malg
+         0     0%   100%     0.50MB  0.57%  runtime.mcommoninit
+         0     0%   100%     0.50MB  0.57%  runtime.mpreinit
+         0     0%   100%     0.50MB  0.57%  runtime.rt0_go
+         0     0%   100%     0.50MB  0.57%  runtime.schedinit
+
+(pprof) list handleHi
+Total: 88MB
+ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/demo/demo.go
+   87.50MB    87.50MB (flat, cum) 99.43% of Total
+         .          .     24:   visitors.n++
+         .          .     25:   num := visitors.n
+         .          .     26:   visitors.Unlock()
+         .          .     27:   //      w.Header().Set("Content-Type", "text/html; charset=utf-8")
+         .          .     28:
+   87.50MB    87.50MB     29:   fmt.Fprintf(w, "<h1 style='color: %s'>Welcome!</h1>You are visitor number %d!", r.FormValue("color"), num)
+         .          .     30:}
+         .          .     31:
+         .          .     32:func main() {
+         .          .     33:   log.Printf("Starting on port 8080")
+         .          .     34:   http.HandleFunc("/hi", handleHi)
+
+(pprof) disasm handleHi
+...
+         .          .      831f7: LEAQ 0x70(SP), BX
+         .          .      831fc: MOVQ BX, 0x8(SP)
+         .          .      83201: MOVQ $0x0, 0x10(SP)
+      43MB       43MB      8320a: CALL runtime.convT2E(SB)
+         .          .      8320f: MOVQ 0x18(SP), CX
+         .          .      83214: MOVQ 0x20(SP), AX
+...
+```
+
+### Runtime representation of Go data structures.
+
+* A Go interface is 2 words of memory: (type, pointer).
+
+* A Go string is 2 words of memory: (base pointer, length, capacity)
+
+* A Go slice is 3 words of memory: (base pointer, length, capacity)
+
+Knowing that, let's look at those 32 bytes/op.
+
+The Go line is:
+
+```
+   fmt.Fprintf(w, "<h1 style='color: %s'>Welcome!</h1>You are visitor number %d!",
+               r.FormValue("color"), num)
+```
+
+The function signature for fmt.Fprintf is:
+
+```
+$ go doc fmt.Fprintf
+func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error)
+
+    Fprintf formats according to a format specifier and writes to w. It returns
+    the number of bytes written and any write error encountered.
+```
+
+Those interface values are 16 bytes each. They're passed by value, but
+the data word of an interface must be a pointer, and because `string`
+is a compound value of 2 words (larger than the 1 word of data) and
+`int` isn't a pointer, the conversion from a type to an empty
+interface (`runtime.convT2E`) allocates 16 bytes for each (the
+smallest allocation size on 64-bit) and puts a pointer to the
+allocation in the data word of the interface value.
+
+## Removing all allocations
+
+You probably don't actually want to write code like this, but when it
+matters, you can do something like:
+
+```
+var bufPool = sync.Pool{
+        New: func() interface{} {
+                return new(bytes.Buffer)
+        },
+}
+```
+
+... to make a per-processor buffer pool at global scope, and then in
+the handler:
+
+```
+        buf := bufPool.Get().(*bytes.Buffer)
+        defer bufPool.Put(buf)
+        buf.Reset()
+        buf.WriteString("<h1 style='color: ")
+        buf.WriteString(r.FormValue("color"))
+        buf.WriteString(">Welcome!</h1>You are visitor number ")
+        b := strconv.AppendInt(buf.Bytes(), int64(num), 10)
+        b = append(b, '!')
+        w.Write(b)
 ```
 
