@@ -9,16 +9,16 @@ import (
 
 var visitors int
 
-var colorRx = regexp.MustCompile(`^\w*$`)
-
 func handleHi(w http.ResponseWriter, r *http.Request) {
-	if !colorRx.MatchString(r.FormValue("color")) {
+	if match, _ := regexp.MatchString(`^\w*$`, r.FormValue("color")); !match {
 		http.Error(w, "Optional color is invalid", http.StatusBadRequest)
 		return
 	}
 	visitors++
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte("<h1 style='color: " + r.FormValue("color") + "'>Welcome!</h1>You are visitor number " + fmt.Sprint(visitors) + "!"))
+	w.Write([]byte("<h1 style='color: " + r.FormValue("color") +
+		"'>Welcome!</h1>You are visitor number " +
+		fmt.Sprint(visitors) + "!"))
 }
 
 func main() {

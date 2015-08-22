@@ -6,6 +6,8 @@ YAPC::Asia 2015
 
 Tokyo Big Sight, 2015-08-22
 
+See the [https://docs.google.com/presentation/d/1lL7Wlh9GBtTSieqHGJ5AUd1XVYR48UPhEloVem-79mA/view#slide=id.p](intro slides).
+
 ## Requirements
 
 If you're following along at home, you'll need the following:
@@ -37,7 +39,8 @@ func handleHi(w http.ResponseWriter, r *http.Request) {
         }
         visitors++
         w.Header().Set("Content-Type", "text/html; charset=utf-8")
-        w.Write([]byte("<h1 style='color: " + r.FormValue("color") + "'>Welcome!</h1>You are visitor number " + fmt.Sprint(visitors) + "!"))
+        w.Write([]byte("<h1 style='color: " + r.FormValue("color") +
+             "'>Welcome!</h1>You are visitor number " + fmt.Sprint(visitors) + "!"))
 }
 
 func main() {
