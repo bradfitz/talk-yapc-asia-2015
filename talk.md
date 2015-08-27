@@ -20,7 +20,7 @@ If you're following along at home, you'll need the following:
 
 Let's debug and optimize a simple HTTP server.
 
-```
+```go
 package main
 
 import (
@@ -72,7 +72,7 @@ Uh oh. No tests. Let's write some.
 
 In `demo_test.go`:
 
-```
+```go
 package demo
 
 import (
@@ -118,7 +118,7 @@ Another way to write an HTTP test is to use the actual HTTP client &
 server, but with automatically created localhost addresses, using the
 `httptest` pacakge:
 
-```
+```go
 func TestHandleHi_TestServer(t *testing.T) {
         ts := httptest.NewServer(http.HandlerFunc(handleHi))
         defer ts.Close()
@@ -169,7 +169,7 @@ it can't report it.
 
 Let's change our test to actually do two things at once:
 
-```
+```go
 func TestHandleHi_TestServer_Parallel(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(handleHi))
 	defer ts.Close()
@@ -256,7 +256,7 @@ Now we can see that the write on line 17 (to the `visitors` variable)
 conflicts with the read on line 17 (of the same variable). To make it
 more obvious, change the code to:
 
-```
+```go
     now := visitors + 1
     visitors = now
 ```
@@ -276,7 +276,7 @@ Multiple options:
 
 ### Mutex
 
-```
+```go
   var visitors struct {
     sync.Mutex
     n int
@@ -292,7 +292,7 @@ Multiple options:
 
 ### Atomic
 
-```
+```go
   var visitors int64 // must be accessed atomically
 ...
   func foo() {
@@ -305,7 +305,7 @@ Multiple options:
 To use Go's CPU profiling, it's easiest to first write a `Benchmark`
 function, which is very similar to a `Test` function.
 
-```
+```go
 func BenchmarkHi(b *testing.B) {
         b.ReportAllocs()
         r := req(b, "GET / HTTP/1.0\r\n\r\n")
@@ -491,7 +491,7 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
 
 ## Let's compile that regexp just once
 
-```
+```go
 var colorRx = regexp.MustCompile(`\w*$`)
 ...
   if !colorRx.MatchString(r.FormValue("color")) {
@@ -616,7 +616,7 @@ Quite an improvement. Now, where is the memory coming from?
 
 * profmem, see & fix the ResponseRecorder:
 
-```
+```go
 func BenchmarkHi(b *testing.B) {
         b.ReportAllocs()
         r := req(b, "GET / HTTP/1.0\r\n\r\n")
@@ -707,7 +707,7 @@ Knowing that, let's look at those 32 bytes/op.
 
 The Go line is:
 
-```
+```go
    fmt.Fprintf(w, "<h1 style='color: %s'>Welcome!</h1>You are visitor number %d!",
                r.FormValue("color"), num)
 ```
@@ -739,7 +739,7 @@ Jump to this part in the slides now:
 You probably don't actually want to write code like this, but when it
 matters, you can do something like:
 
-```
+```go
 var bufPool = sync.Pool{
         New: func() interface{} {
                 return new(bytes.Buffer)
@@ -750,7 +750,7 @@ var bufPool = sync.Pool{
 ... to make a per-processor buffer pool at global scope, and then in
 the handler:
 
-```
+```go
         buf := bufPool.Get().(*bytes.Buffer)
         defer bufPool.Put(buf)
         buf.Reset()
@@ -765,7 +765,7 @@ the handler:
 ## Contention profiling
 
 First, write a parallel benchmark:
-```
+```go
 func BenchmarkHiParallel(b *testing.B) {
         r := req(b, "GET / HTTP/1.0\r\n\r\n")
         b.RunParallel(func(pb *testing.PB) {
@@ -786,7 +786,7 @@ $ go test -bench=Parallel -blockprofile=prof.block
 
 And "fix":
 
-```
+```go
 var colorRxPool = sync.Pool{
         New: func() interface{} { return regexp.MustCompile(`\w*$`) },
 }
@@ -802,7 +802,7 @@ What about that visitors mutex?
 
 Let's pull it out into a func:
 
-```
+```go
         num := nextVisitorNum()
 ...
 func nextVisitorNum() int {
@@ -815,7 +815,7 @@ func nextVisitorNum() int {
 
 And write some benchmarks:
 
-```
+```go
 func BenchmarkVisitCount(b *testing.B) {
         b.RunParallel(func(pb *testing.PB) {
                 for pb.Next() {
