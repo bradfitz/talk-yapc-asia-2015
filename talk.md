@@ -270,7 +270,7 @@ for a crash. The runtime promises nothing if you have a data race.
 
 Multiple options:
 
-* use channels ("share by communication, don't communication by sharing")
+* use channels ("Do not communicate by sharing memory; instead, share memory by communicating.")
 * use a Mutex
 * use atomic
 
