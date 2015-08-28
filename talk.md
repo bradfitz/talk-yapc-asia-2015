@@ -85,7 +85,7 @@ import (
 
 func TestHandleRoot_Recorder(t *testing.T) {
         rw := httptest.NewRecorder()
-        handleRoot(rw, req(t, "GET / HTTP/1.0\r\n\r\n"))
+        handleHi(rw, req(t, "GET / HTTP/1.0\r\n\r\n"))
         if !strings.Contains(rw.Body.String(), "visitor number") {
                 t.Errorf("Unexpected output: %s", rw.Body)
         }
