@@ -23,7 +23,7 @@ If you're following along at home, you'll need the following:
 Let's debug and optimize a simple HTTP server.
 
 ```go
-package main
+package demo
 
 import (
         "fmt"
