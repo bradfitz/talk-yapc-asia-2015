@@ -302,6 +302,21 @@ Multiple options:
     visitNum := atomic.AddInt64(&visitors, 1)
 ```
 
+### Channel
+
+```go
+  var visitors chan int = make(chan int, 1)
+  ...
+  func init() {
+    visitors <- 0
+  }
+  ...
+  func foo() {
+    ...
+    visitNum := <-visitors + 1
+    visitors <- visitNum
+```
+
 ## How fast can it go? CPU Profiling!
 
 To use Go's CPU profiling, it's easiest to first write a `Benchmark`
