@@ -118,7 +118,7 @@ the `ResponseWriter` interface.
 
 Another way to write an HTTP test is to use the actual HTTP client &
 server, but with automatically created localhost addresses, using the
-`httptest` pacakge:
+`httptest` package:
 
 ```go
 func TestHandleHi_TestServer(t *testing.T) {
