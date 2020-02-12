@@ -8,7 +8,7 @@ Tokyo Big Sight, 2015-08-22
 
 See the [intro slides](https://goo.gl/PYpNXT).
 
-Watch the [video recording of this talk](http://yapcasia.org/2015/talk/show/6bde6c69-187a-11e5-aca1-525412004261).
+Watch the [video recording of this talk](https://www.youtube.com/watch?v=xxDZuPEgbBU).
 
 ## Requirements
 
