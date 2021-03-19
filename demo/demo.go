@@ -9,7 +9,7 @@ import (
 
 var visitors int
 
-func handleHi(w http.ResponseWriter, r *http.Request) {
+func handleRoot(w http.ResponseWriter, r *http.Request) {
 	if match, _ := regexp.MatchString(`^\w*$`, r.FormValue("color")); !match {
 		http.Error(w, "Optional color is invalid", http.StatusBadRequest)
 		return
@@ -23,6 +23,6 @@ func handleHi(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	log.Printf("Starting on port 8080")
-	http.HandleFunc("/hi", handleHi)
+	http.HandleFunc("/hi", handleRoot)
 	log.Fatal(http.ListenAndServe("127.0.0.1:8080", nil))
 }

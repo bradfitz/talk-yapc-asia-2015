@@ -335,9 +335,9 @@ function handleMouseUp(evt) {
 </g>
 <!-- N2 -->
 <g id="node3" class="node"><title>N2</title>
-<g id="a_node3"><a xlink:title="yapc/demo.BenchmarkHi (3.47s)">
+<g id="a_node3"><a xlink:title="yapc/demo.BenchmarkRoot (3.47s)">
 <polygon fill="#f8f8f8" stroke="black" points="798.25,-2059.5 679.75,-2059.5 679.75,-2018.5 798.25,-2018.5 798.25,-2059.5"/>
-<text text-anchor="middle" x="739" y="-2047.5" font-family="Times,serif" font-size="10.00">yapc/demo.BenchmarkHi</text>
+<text text-anchor="middle" x="739" y="-2047.5" font-family="Times,serif" font-size="10.00">yapc/demo.BenchmarkRoot</text>
 <text text-anchor="middle" x="739" y="-2036.5" font-family="Times,serif" font-size="10.00">0.01s(0.26%)</text>
 <text text-anchor="middle" x="739" y="-2025.5" font-family="Times,serif" font-size="10.00">of 3.47s(90.13%)</text>
 </a>
@@ -345,9 +345,9 @@ function handleMouseUp(evt) {
 </g>
 <!-- N3 -->
 <g id="node4" class="node"><title>N3</title>
-<g id="a_node4"><a xlink:title="yapc/demo.handleHi (3.44s)">
+<g id="a_node4"><a xlink:title="yapc/demo.handleRoot (3.44s)">
 <polygon fill="#f8f8f8" stroke="black" points="789,-1965.5 689,-1965.5 689,-1924.5 789,-1924.5 789,-1965.5"/>
-<text text-anchor="middle" x="739" y="-1953.5" font-family="Times,serif" font-size="10.00">yapc/demo.handleHi</text>
+<text text-anchor="middle" x="739" y="-1953.5" font-family="Times,serif" font-size="10.00">yapc/demo.handleRoot</text>
 <text text-anchor="middle" x="739" y="-1942.5" font-family="Times,serif" font-size="10.00">0.01s(0.26%)</text>
 <text text-anchor="middle" x="739" y="-1931.5" font-family="Times,serif" font-size="10.00">of 3.44s(89.35%)</text>
 </a>
@@ -355,12 +355,12 @@ function handleMouseUp(evt) {
 </g>
 <!-- N2&#45;&gt;N3 -->
 <g id="edge4" class="edge"><title>N2&#45;&gt;N3</title>
-<g id="a_edge4"><a xlink:title="yapc/demo.BenchmarkHi &#45;&gt; yapc/demo.handleHi (3.44s)">
+<g id="a_edge4"><a xlink:title="yapc/demo.BenchmarkRoot &#45;&gt; yapc/demo.handleRoot (3.44s)">
 <path fill="none" stroke="black" stroke-width="5" d="M739,-2018.49C739,-2006.13 739,-1989.91 739,-1975.94"/>
 <polygon fill="black" stroke="black" stroke-width="5" points="743.375,-1975.8 739,-1965.8 734.625,-1975.8 743.375,-1975.8"/>
 </a>
 </g>
-<g id="a_edge4&#45;label"><a xlink:title="yapc/demo.BenchmarkHi &#45;&gt; yapc/demo.handleHi (3.44s)">
+<g id="a_edge4&#45;label"><a xlink:title="yapc/demo.BenchmarkRoot &#45;&gt; yapc/demo.handleRoot (3.44s)">
 <text text-anchor="middle" x="756" y="-1988.3" font-family="Times,serif" font-size="14.00"> 3.44s</text>
 </a>
 </g>
@@ -377,12 +377,12 @@ function handleMouseUp(evt) {
 </g>
 <!-- N2&#45;&gt;N18 -->
 <g id="edge113" class="edge"><title>N2&#45;&gt;N18</title>
-<g id="a_edge113"><a xlink:title="yapc/demo.BenchmarkHi &#45;&gt; runtime.newobject (0.01s)">
+<g id="a_edge113"><a xlink:title="yapc/demo.BenchmarkRoot &#45;&gt; runtime.newobject (0.01s)">
 <path fill="none" stroke="black" d="M798.447,-2037.55C938.121,-2036.03 1297.99,-2029.33 1597,-2000 1736.62,-1986.3 1908,-2086.29 1908,-1946 1908,-1946 1908,-1946 1908,-1573 1908,-1510.78 1907,-1495.22 1907,-1433 1907,-1433 1907,-1433 1907,-1280 1907,-1235.36 1866.11,-1239.39 1825,-1222 1777,-1201.7 1718.38,-1191.93 1675.45,-1187.25"/>
 <polygon fill="black" stroke="black" points="1675.75,-1183.76 1665.44,-1186.22 1675.03,-1190.73 1675.75,-1183.76"/>
 </a>
 </g>
-<g id="a_edge113&#45;label"><a xlink:title="yapc/demo.BenchmarkHi &#45;&gt; runtime.newobject (0.01s)">
+<g id="a_edge113&#45;label"><a xlink:title="yapc/demo.BenchmarkRoot &#45;&gt; runtime.newobject (0.01s)">
 <text text-anchor="middle" x="1925" y="-1618.3" font-family="Times,serif" font-size="14.00"> 0.01s</text>
 </a>
 </g>
@@ -399,12 +399,12 @@ function handleMouseUp(evt) {
 </g>
 <!-- N2&#45;&gt;N44 -->
 <g id="edge112" class="edge"><title>N2&#45;&gt;N44</title>
-<g id="a_edge112"><a xlink:title="yapc/demo.BenchmarkHi &#45;&gt; runtime.makemap (0.01s)">
+<g id="a_edge112"><a xlink:title="yapc/demo.BenchmarkRoot &#45;&gt; runtime.makemap (0.01s)">
 <path fill="none" stroke="black" d="M798.327,-2036.09C1024.64,-2028.42 1821,-1997.76 1821,-1946 1821,-1946 1821,-1946 1821,-1478 1821,-1455.41 1814.31,-1430.76 1807.85,-1412.23"/>
 <polygon fill="black" stroke="black" points="1811.05,-1410.81 1804.32,-1402.62 1804.48,-1413.21 1811.05,-1410.81"/>
 </a>
 </g>
-<g id="a_edge112&#45;label"><a xlink:title="yapc/demo.BenchmarkHi &#45;&gt; runtime.makemap (0.01s)">
+<g id="a_edge112&#45;label"><a xlink:title="yapc/demo.BenchmarkRoot &#45;&gt; runtime.makemap (0.01s)">
 <text text-anchor="middle" x="1838" y="-1712.3" font-family="Times,serif" font-size="14.00"> 0.01s</text>
 </a>
 </g>
@@ -420,12 +420,12 @@ function handleMouseUp(evt) {
 </g>
 <!-- N3&#45;&gt;N4 -->
 <g id="edge5" class="edge"><title>N3&#45;&gt;N4</title>
-<g id="a_edge5"><a xlink:title="yapc/demo.handleHi &#45;&gt; regexp.MatchString (3.30s)">
+<g id="a_edge5"><a xlink:title="yapc/demo.handleRoot &#45;&gt; regexp.MatchString (3.30s)">
 <path fill="none" stroke="black" stroke-width="5" d="M739,-1924.25C739,-1911.96 739,-1895.99 739,-1882.48"/>
 <polygon fill="black" stroke="black" stroke-width="5" points="743.375,-1882.29 739,-1872.29 734.625,-1882.29 743.375,-1882.29"/>
 </a>
 </g>
-<g id="a_edge5&#45;label"><a xlink:title="yapc/demo.handleHi &#45;&gt; regexp.MatchString (3.30s)">
+<g id="a_edge5&#45;label"><a xlink:title="yapc/demo.handleRoot &#45;&gt; regexp.MatchString (3.30s)">
 <text text-anchor="middle" x="756" y="-1894.3" font-family="Times,serif" font-size="14.00"> 3.30s</text>
 </a>
 </g>
@@ -441,12 +441,12 @@ function handleMouseUp(evt) {
 </g>
 <!-- N3&#45;&gt;N48 -->
 <g id="edge86" class="edge"><title>N3&#45;&gt;N48</title>
-<g id="a_edge86"><a xlink:title="yapc/demo.handleHi &#45;&gt; runtime.stringtoslicebyte (0.03s)">
+<g id="a_edge86"><a xlink:title="yapc/demo.handleRoot &#45;&gt; runtime.stringtoslicebyte (0.03s)">
 <path fill="none" stroke="black" d="M688.971,-1942.53C534.749,-1937.33 77,-1916.71 77,-1855 77,-1855 77,-1855 77,-1181 77,-1155.18 70.754,-1126.37 65.243,-1105.97"/>
 <polygon fill="black" stroke="black" points="68.5502,-1104.8 62.4651,-1096.12 61.8135,-1106.7 68.5502,-1104.8"/>
 </a>
 </g>
-<g id="a_edge86&#45;label"><a xlink:title="yapc/demo.handleHi &#45;&gt; runtime.stringtoslicebyte (0.03s)">
+<g id="a_edge86&#45;label"><a xlink:title="yapc/demo.handleRoot &#45;&gt; runtime.stringtoslicebyte (0.03s)">
 <text text-anchor="middle" x="94" y="-1522.3" font-family="Times,serif" font-size="14.00"> 0.03s</text>
 </a>
 </g>
@@ -462,12 +462,12 @@ function handleMouseUp(evt) {
 </g>
 <!-- N3&#45;&gt;N50 -->
 <g id="edge98" class="edge"><title>N3&#45;&gt;N50</title>
-<g id="a_edge98"><a xlink:title="yapc/demo.handleHi &#45;&gt; fmt.Sprint (0.02s)">
+<g id="a_edge98"><a xlink:title="yapc/demo.handleRoot &#45;&gt; fmt.Sprint (0.02s)">
 <path fill="none" stroke="black" d="M760.084,-1924.25C774.235,-1910.99 792.972,-1893.44 808.041,-1879.32"/>
 <polygon fill="black" stroke="black" points="810.637,-1881.68 815.542,-1872.29 805.852,-1876.57 810.637,-1881.68"/>
 </a>
 </g>
-<g id="a_edge98&#45;label"><a xlink:title="yapc/demo.handleHi &#45;&gt; fmt.Sprint (0.02s)">
+<g id="a_edge98&#45;label"><a xlink:title="yapc/demo.handleRoot &#45;&gt; fmt.Sprint (0.02s)">
 <text text-anchor="middle" x="813" y="-1894.3" font-family="Times,serif" font-size="14.00"> 0.02s</text>
 </a>
 </g>
@@ -483,12 +483,12 @@ function handleMouseUp(evt) {
 </g>
 <!-- N3&#45;&gt;N53 -->
 <g id="edge99" class="edge"><title>N3&#45;&gt;N53</title>
-<g id="a_edge99"><a xlink:title="yapc/demo.handleHi &#45;&gt; runtime.convT2E (0.02s)">
+<g id="a_edge99"><a xlink:title="yapc/demo.handleRoot &#45;&gt; runtime.convT2E (0.02s)">
 <path fill="none" stroke="black" d="M789.106,-1938.43C933.954,-1922.34 1351.84,-1875.91 1492.87,-1860.24"/>
 <polygon fill="black" stroke="black" points="1493.38,-1863.7 1502.93,-1859.12 1492.6,-1856.74 1493.38,-1863.7"/>
 </a>
 </g>
-<g id="a_edge99&#45;label"><a xlink:title="yapc/demo.handleHi &#45;&gt; runtime.convT2E (0.02s)">
+<g id="a_edge99&#45;label"><a xlink:title="yapc/demo.handleRoot &#45;&gt; runtime.convT2E (0.02s)">
 <text text-anchor="middle" x="1229" y="-1894.3" font-family="Times,serif" font-size="14.00"> 0.02s</text>
 </a>
 </g>
@@ -2056,12 +2056,12 @@ function handleMouseUp(evt) {
 </g>
 <!-- N60&#45;&gt;N2 -->
 <g id="edge3" class="edge"><title>N60&#45;&gt;N2</title>
-<g id="a_edge3"><a xlink:title="testing.(*B).runN &#45;&gt; yapc/demo.BenchmarkHi (3.47s)">
+<g id="a_edge3"><a xlink:title="testing.(*B).runN &#45;&gt; yapc/demo.BenchmarkRoot (3.47s)">
 <path fill="none" stroke="black" stroke-width="5" d="M739,-2111.84C739,-2099.93 739,-2083.74 739,-2069.75"/>
 <polygon fill="black" stroke="black" stroke-width="5" points="743.375,-2069.59 739,-2059.59 734.625,-2069.59 743.375,-2069.59"/>
 </a>
 </g>
-<g id="a_edge3&#45;label"><a xlink:title="testing.(*B).runN &#45;&gt; yapc/demo.BenchmarkHi (3.47s)">
+<g id="a_edge3&#45;label"><a xlink:title="testing.(*B).runN &#45;&gt; yapc/demo.BenchmarkRoot (3.47s)">
 <text text-anchor="middle" x="756" y="-2082.3" font-family="Times,serif" font-size="14.00"> 3.47s</text>
 </a>
 </g>

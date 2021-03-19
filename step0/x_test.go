@@ -121,7 +121,7 @@ func benchmarkHandler(b *testing.B, fn http.HandlerFunc) {
 	b.ReportAllocs()
 	r := req(b, "GET / HTTP/1.0\r\n\r\n")
 	b.RunParallel(func(p *testing.PB) {
-		for pb.Next() {
+		for p.Next() {
 			fn(new(httptest.ResponseRecorder), r)
 		}
 	})
