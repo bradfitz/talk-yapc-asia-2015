@@ -34,7 +34,7 @@ import (
 
 var visitors int
 
-func handleHi(w http.ResponseWriter, r *http.Request) {
+func handleRoot(w http.ResponseWriter, r *http.Request) {
         if match, _ := regexp.MatchString(`^\w*$`, r.FormValue("color")); !match {
                 http.Error(w, "Optional color is invalid", http.StatusBadRequest)
                 return
@@ -47,7 +47,7 @@ func handleHi(w http.ResponseWriter, r *http.Request) {
 
 func main() {
         log.Printf("Starting on port 8080")
-        http.HandleFunc("/hi", handleHi)
+        http.HandleFunc("/hi", handleRoot)
         log.Fatal(http.ListenAndServe("127.0.0.1:8080", nil))
 }
 ```
@@ -87,7 +87,7 @@ import (
 
 func TestHandleRoot_Recorder(t *testing.T) {
         rw := httptest.NewRecorder()
-        handleHi(rw, req(t, "GET / HTTP/1.0\r\n\r\n"))
+        handleRoot(rw, req(t, "GET / HTTP/1.0\r\n\r\n"))
         if !strings.Contains(rw.Body.String(), "visitor number") {
                 t.Errorf("Unexpected output: %s", rw.Body)
         }
@@ -106,8 +106,8 @@ Now:
 
 ```
 $ go test -v
-=== RUN   TestHandleHi_Recorder
---- PASS: TestHandleHi_Recorder (0.00s)
+=== RUN   TestHandleRoot_Recorder
+--- PASS: TestHandleRoot_Recorder (0.00s)
 PASS
 ok      yapc/demo       0.053s
 
@@ -121,8 +121,8 @@ server, but with automatically created localhost addresses, using the
 `httptest` package:
 
 ```go
-func TestHandleHi_TestServer(t *testing.T) {
-        ts := httptest.NewServer(http.HandlerFunc(handleHi))
+func TestHandleRoot_TestServer(t *testing.T) {
+        ts := httptest.NewServer(http.HandlerFunc(handleRoot))
         defer ts.Close()
         res, err := http.Get(ts.URL)
         if err != nil {
@@ -172,8 +172,8 @@ it can't report it.
 Let's change our test to actually do two things at once:
 
 ```go
-func TestHandleHi_TestServer_Parallel(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(handleHi))
+func TestHandleRoot_TestServer_Parallel(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(handleRoot))
 	defer ts.Close()
 	var wg sync.WaitGroup
 	for i := 0; i < 2; i++ {
@@ -205,16 +205,16 @@ Now we can run it again and see:
 
 ```
 $ go test -v -race
-=== RUN   TestHandleHi_Recorder
---- PASS: TestHandleHi_Recorder (0.00s)
-=== RUN   TestHandleHi_TestServer
---- PASS: TestHandleHi_TestServer (0.00s)
+=== RUN   TestHandleRoot_Recorder
+--- PASS: TestHandleRoot_Recorder (0.00s)
+=== RUN   TestHandleRoot_TestServer
+--- PASS: TestHandleRoot_TestServer (0.00s)
         demo_test.go:46: Got: <h1 style='color: '>Welcome!</h1>You are visitor number 2!
-=== RUN   TestHandleHi_TestServer_Parallel
+=== RUN   TestHandleRoot_TestServer_Parallel
 ==================
 WARNING: DATA RACE
 Read by goroutine 21:
-  yapc/demo.handleHi()
+  yapc/demo.handleRoot()
       /Users/bradfitz/src/yapc/demo/demo.go:17 +0xf5
   net/http.HandlerFunc.ServeHTTP()
       /Users/bradfitz/go/src/net/http/server.go:1422 +0x47
@@ -226,7 +226,7 @@ Read by goroutine 21:
       /Users/bradfitz/go/src/net/http/server.go:1361 +0x117c
 
 Previous write by goroutine 23:
-  yapc/demo.handleHi()
+  yapc/demo.handleRoot()
       /Users/bradfitz/src/yapc/demo/demo.go:17 +0x111
   net/http.HandlerFunc.ServeHTTP()
       /Users/bradfitz/go/src/net/http/server.go:1422 +0x47
@@ -245,7 +245,7 @@ Goroutine 23 (running) created at:
   net/http.(*Server).Serve()
       /Users/bradfitz/go/src/net/http/server.go:1912 +0x464
 ==================
---- PASS: TestHandleHi_TestServer_Parallel (0.00s)
+--- PASS: TestHandleRoot_TestServer_Parallel (0.00s)
         demo_test.go:68: Got: <h1 style='color: '>Welcome!</h1>You are visitor number 3!
         demo_test.go:68: Got: <h1 style='color: '>Welcome!</h1>You are visitor number 4!
 PASS
@@ -308,12 +308,12 @@ To use Go's CPU profiling, it's easiest to first write a `Benchmark`
 function, which is very similar to a `Test` function.
 
 ```go
-func BenchmarkHi(b *testing.B) {
+func BenchmarkRoot(b *testing.B) {
         b.ReportAllocs()
         r := req(b, "GET / HTTP/1.0\r\n\r\n")
         for i := 0; i < b.N; i++ {
                 rw := httptest.NewRecorder()
-                handleHi(rw, r)
+                handleRoot(rw, r)
         }
 }
 ```
@@ -326,7 +326,7 @@ Now we can run the benchmarks:
 ```
 $ go test -v -run=^$ -bench=. 
 PASS
-BenchmarkHi-4     100000             12843 ns/op
+BenchmarkRoot-4     100000             12843 ns/op
 ok      yapc/demo       1.472s
 ```
 
@@ -339,7 +339,7 @@ But let's see where the CPU is going now....
 ## CPU Profiling
 
 ```
-$ go test -v -run=^$ -bench=^BenchmarkHi$ -benchtime=2s -cpuprofile=prof.cpu
+$ go test -v -run=^$ -bench=^BenchmarkRoot$ -benchtime=2s -cpuprofile=prof.cpu
 ```
 
 (Leaves `demo.test` binary behind)
@@ -374,23 +374,23 @@ Showing top 10 nodes out of 92 (cum >= 2.22s)
          0     0%     0%      3.55s 92.21%  runtime.goexit
          0     0%     0%      3.48s 90.39%  testing.(*B).launch
          0     0%     0%      3.48s 90.39%  testing.(*B).runN
-     0.01s  0.26%  0.26%      3.47s 90.13%  yapc/demo.BenchmarkHi
-     0.01s  0.26%  0.52%      3.44s 89.35%  yapc/demo.handleHi
+     0.01s  0.26%  0.26%      3.47s 90.13%  yapc/demo.BenchmarkRoot
+     0.01s  0.26%  0.52%      3.44s 89.35%  yapc/demo.handleRoot
          0     0%  0.52%      3.30s 85.71%  regexp.MatchString
      0.01s  0.26%  0.78%         3s 77.92%  regexp.Compile
          0     0%  0.78%      2.99s 77.66%  regexp.compile
      0.20s  5.19%  5.97%      2.27s 58.96%  runtime.mallocgc
      0.03s  0.78%  6.75%      2.22s 57.66%  regexp.compileOnePass
 
-(pprof) list handleHi
+(pprof) list handleRoot
 Total: 3.85s
-ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/demo/demo.go
+ROUTINE ======================== yapc/demo.handleRoot in /Users/bradfitz/src/yapc/demo/demo.go
       10ms      3.44s (flat, cum) 89.35% of Total
          .          .      8:)
          .          .      9:
          .          .     10:var visitors int
          .          .     11:
-         .          .     12:func handleHi(w http.ResponseWriter, r *http.Request) {
+         .          .     12:func handleRoot(w http.ResponseWriter, r *http.Request) {
          .      3.30s     13:   if match, _ := regexp.MatchString(\w*$r.FormValue("color")); !match {
          .          .     14:           http.Error(w, "Optional color is invalid", http.StatusBadRequest)
          .          .     15:           return
@@ -402,7 +402,7 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
          .          .     21:
          .          .     22:func main() {
          .          .     23:   log.Printf("Starting on port 8080")
-         .          .     24:   http.HandleFunc("/hi", handleHi)
+         .          .     24:   http.HandleFunc("/hi", handleRoot)
 
 (pprof) web
 ```
@@ -435,7 +435,7 @@ Showing top 10 nodes out of 33 (cum >= 1484.75MB)
    84.50MB  5.69% 65.86%    84.50MB  5.69%  regexp.mergeRuneSets.func2
    69.51MB  4.68% 70.54%    80.01MB  5.39%  regexp/syntax.(*parser).op
    58.51MB  3.94% 74.48%   242.02MB 16.30%  regexp/syntax.Parse
-   53.50MB  3.60% 78.08%  1484.75MB   100%  yapc/demo.BenchmarkHi
+   53.50MB  3.60% 78.08%  1484.75MB   100%  yapc/demo.BenchmarkRoot
 
 (pprof) top --cum
 249.02MB of 1485.25MB total (16.77%)
@@ -445,37 +445,37 @@ Showing top 10 nodes out of 33 (cum >= 308.51MB)
          0     0%     0%  1484.75MB   100%  runtime.goexit
          0     0%     0%  1484.75MB   100%  testing.(*B).launch
          0     0%     0%  1484.75MB   100%  testing.(*B).runN
-   53.50MB  3.60%  3.60%  1484.75MB   100%  yapc/demo.BenchmarkHi
-   52.50MB  3.53%  7.14%  1431.25MB 96.36%  yapc/demo.handleHi
+   53.50MB  3.60%  3.60%  1484.75MB   100%  yapc/demo.BenchmarkRoot
+   52.50MB  3.53%  7.14%  1431.25MB 96.36%  yapc/demo.handleRoot
          0     0%  7.14%  1265.21MB 85.18%  regexp.MatchString
          0     0%  7.14%  1087.18MB 73.20%  regexp.Compile
    42.51MB  2.86% 10.00%  1087.18MB 73.20%  regexp.compile
          0     0% 10.00%   602.61MB 40.57%  regexp.compileOnePass
   100.51MB  6.77% 16.77%   308.51MB 20.77%  regexp.makeOnePass
 
-(pprof) list BenchmarkHi
+(pprof) list BenchmarkRoot
 Total: 1.45GB
-ROUTINE ======================== yapc/demo.BenchmarkHi in /Users/bradfitz/src/yapc/demo/demo_test.go
+ROUTINE ======================== yapc/demo.BenchmarkRoot in /Users/bradfitz/src/yapc/demo/demo_test.go
    53.50MB     1.45GB (flat, cum)   100% of Total
          .          .     72:}
          .          .     73:
-         .          .     74:func BenchmarkHi(b *testing.B) {
+         .          .     74:func BenchmarkRoot(b *testing.B) {
          .          .     75:   r := req(b, "GET / HTTP/1.0\r\n\r\n")
          .          .     76:   for i := 0; i < b.N; i++ {
    53.50MB    53.50MB     77:           rw := httptest.NewRecorder()
-         .     1.40GB     78:           handleHi(rw, r)
+         .     1.40GB     78:           handleRoot(rw, r)
          .          .     79:   }
          .          .     80:}
 
-(pprof) list handleHi
+(pprof) list handleRoot
 Total: 1.45GB
-ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/demo/demo.go
+ROUTINE ======================== yapc/demo.handleRoot in /Users/bradfitz/src/yapc/demo/demo.go
    52.50MB     1.40GB (flat, cum) 96.36% of Total
          .          .      8:)
          .          .      9:
          .          .     10:var visitors int
          .          .     11:
-         .          .     12:func handleHi(w http.ResponseWriter, r *http.Request) {
+         .          .     12:func handleRoot(w http.ResponseWriter, r *http.Request) {
          .     1.24GB     13:   if match, _ := regexp.MatchString(\w*$r.FormValue("color")); !match {
          .          .     14:           http.Error(w, "Optional color is invalid", http.StatusBadRequest)
          .          .     15:           return
@@ -487,7 +487,7 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
          .          .     21:
          .          .     22:func main() {
          .          .     23:   log.Printf("Starting on port 8080")
-         .          .     24:   http.HandleFunc("/hi", handleHi)
+         .          .     24:   http.HandleFunc("/hi", handleRoot)
 
 ```
 
@@ -504,7 +504,7 @@ And now:
 ```
 $ go test -bench=.
 PASS
-BenchmarkHi-4    1000000              1451 ns/op
+BenchmarkRoot-4    1000000              1451 ns/op
 ok      yapc/demo       1.517s
 ```
 
@@ -515,7 +515,7 @@ Let's compare CPU now:
 ```
 bradfitz@laptop demo$ go test -v -run=^$ -bench=. -benchtime=3s -memprofile=prof.mem -cpuprofile=prof.cpu
 PASS
-BenchmarkHi-4    3000000              1420 ns/op
+BenchmarkRoot-4    3000000              1420 ns/op
 ok      yapc/demo       5.768s
 bradfitz@laptop demo$ profcpu
 Entering interactive mode (type "help" for commands)
@@ -527,8 +527,8 @@ Showing top 30 nodes out of 114 (cum >= 0.67s)
          0     0%     0%      4.84s 77.56%  runtime.goexit
          0     0%     0%      3.72s 59.62%  testing.(*B).launch
          0     0%     0%      3.72s 59.62%  testing.(*B).runN
-     0.02s  0.32%  0.32%      3.71s 59.46%  yapc/demo.BenchmarkHi
-         0     0%  0.32%      3.04s 48.72%  yapc/demo.handleHi
+     0.02s  0.32%  0.32%      3.71s 59.46%  yapc/demo.BenchmarkRoot
+         0     0%  0.32%      3.04s 48.72%  yapc/demo.handleRoot
      0.37s  5.93%  6.25%      2.55s 40.87%  runtime.mallocgc
      2.16s 34.62% 40.87%      2.16s 34.62%  runtime.mach_semaphore_signal
          0     0% 40.87%      2.16s 34.62%  runtime.mach_semrelease
@@ -564,16 +564,16 @@ Dropped 9 nodes (cum <= 13.70MB)
          0     0%     0%  2740.03MB   100%  runtime.goexit
          0     0%     0%  2740.03MB   100%  testing.(*B).launch
          0     0%     0%  2740.03MB   100%  testing.(*B).runN
-  728.06MB 26.57% 26.57%  2740.03MB   100%  yapc/demo.BenchmarkHi
-  561.03MB 20.47% 47.04%  2011.98MB 73.42%  yapc/demo.handleHi
+  728.06MB 26.57% 26.57%  2740.03MB   100%  yapc/demo.BenchmarkRoot
+  561.03MB 20.47% 47.04%  2011.98MB 73.42%  yapc/demo.handleRoot
          0     0% 47.04%  1382.94MB 50.46%  net/http.Header.Set
  1382.94MB 50.46% 97.50%  1382.94MB 50.46%  net/textproto.MIMEHeader.Set
    67.50MB  2.46%   100%       68MB  2.48%  fmt.Sprint
 (pprof)
 
-(pprof) list handleHi
+(pprof) list handleRoot
 Total: 2.68GB
-ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/demo/demo.go
+ROUTINE ======================== yapc/demo.handleRoot in /Users/bradfitz/src/yapc/demo/demo.go
   561.03MB     1.96GB (flat, cum) 73.42% of Total
          .          .     15:   if !colorRx.MatchString(r.FormValue("color")) {
          .          .     16:           http.Error(w, "Optional color is invalid", http.StatusBadRequest)
@@ -586,7 +586,7 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
          .          .     23:
          .          .     24:func main() {
          .          .     25:   log.Printf("Starting on port 8080")
-         .          .     26:   http.HandleFunc("/hi", handleHi)
+         .          .     26:   http.HandleFunc("/hi", handleRoot)
 ```
 
 ## Optimize memory
@@ -605,13 +605,13 @@ $ go test -bench=. -memprofile=prof.mem | tee mem.2
 
 $ benchcmp mem.0 mem.2
 benchmark         old ns/op     new ns/op     delta
-BenchmarkHi-4     1180          964           -18.31%
+BenchmarkRoot-4     1180          964           -18.31%
 
 benchmark         old allocs     new allocs     delta
-BenchmarkHi-4     9              5              -44.44%
+BenchmarkRoot-4     9              5              -44.44%
 
 benchmark         old bytes     new bytes     delta
-BenchmarkHi-4     720           224           -68.89%
+BenchmarkRoot-4     720           224           -68.89%
 ```
 
 Quite an improvement. Now, where is the memory coming from?
@@ -619,12 +619,12 @@ Quite an improvement. Now, where is the memory coming from?
 * profmem, see & fix the ResponseRecorder:
 
 ```go
-func BenchmarkHi(b *testing.B) {
+func BenchmarkRoot(b *testing.B) {
         b.ReportAllocs()
         r := req(b, "GET / HTTP/1.0\r\n\r\n")
         rw := httptest.NewRecorder()
         for i := 0; i < b.N; i++ {
-                handleHi(rw, r)
+                handleRoot(rw, r)
                 reset(rw)
         }
 }
@@ -648,7 +648,7 @@ Now:
 ```
 $ go test -bench=. -memprofile=prof.mem | tee mem.3
 PASS
-BenchmarkHi-4    2000000               649 ns/op              32 B/op          2 allocs/op
+BenchmarkRoot-4    2000000               649 ns/op              32 B/op          2 allocs/op
 ```
 
 Where is that?
@@ -660,17 +660,17 @@ Where is that?
          0     0%     0%    87.50MB 99.43%  runtime.goexit
          0     0%     0%    87.50MB 99.43%  testing.(*B).launch
          0     0%     0%    87.50MB 99.43%  testing.(*B).runN
-         0     0%     0%    87.50MB 99.43%  yapc/demo.BenchmarkHi
-   87.50MB 99.43% 99.43%    87.50MB 99.43%  yapc/demo.handleHi
+         0     0%     0%    87.50MB 99.43%  yapc/demo.BenchmarkRoot
+   87.50MB 99.43% 99.43%    87.50MB 99.43%  yapc/demo.handleRoot
     0.50MB  0.57%   100%     0.50MB  0.57%  runtime.malg
          0     0%   100%     0.50MB  0.57%  runtime.mcommoninit
          0     0%   100%     0.50MB  0.57%  runtime.mpreinit
          0     0%   100%     0.50MB  0.57%  runtime.rt0_go
          0     0%   100%     0.50MB  0.57%  runtime.schedinit
 
-(pprof) list handleHi
+(pprof) list handleRoot
 Total: 88MB
-ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/demo/demo.go
+ROUTINE ======================== yapc/demo.handleRoot in /Users/bradfitz/src/yapc/demo/demo.go
    87.50MB    87.50MB (flat, cum) 99.43% of Total
          .          .     24:   visitors.n++
          .          .     25:   num := visitors.n
@@ -682,9 +682,9 @@ ROUTINE ======================== yapc/demo.handleHi in /Users/bradfitz/src/yapc/
          .          .     31:
          .          .     32:func main() {
          .          .     33:   log.Printf("Starting on port 8080")
-         .          .     34:   http.HandleFunc("/hi", handleHi)
+         .          .     34:   http.HandleFunc("/hi", handleRoot)
 
-(pprof) disasm handleHi
+(pprof) disasm handleRoot
 ...
          .          .      831f7: LEAQ 0x70(SP), BX
          .          .      831fc: MOVQ BX, 0x8(SP)
@@ -768,12 +768,12 @@ the handler:
 
 First, write a parallel benchmark:
 ```go
-func BenchmarkHiParallel(b *testing.B) {
+func BenchmarkRootParallel(b *testing.B) {
         r := req(b, "GET / HTTP/1.0\r\n\r\n")
         b.RunParallel(func(pb *testing.PB) {
                 rw := httptest.NewRecorder()
                 for pb.Next() {
-                        handleHi(rw, r)
+                        handleRoot(rw, r)
                         reset(rw)
                 }
         })
@@ -793,7 +793,7 @@ var colorRxPool = sync.Pool{
         New: func() interface{} { return regexp.MustCompile(`\w*$`) },
 }
 ...
-func handleHi(w http.ResponseWriter, r *http.Request) {
+func handleRoot(w http.ResponseWriter, r *http.Request) {
         if !colorRxPool.Get().(*regexp.Regexp).MatchString(r.FormValue("color")) {
                 http.Error(w, "Optional color is invalid", http.StatusBadRequest)
                 return
